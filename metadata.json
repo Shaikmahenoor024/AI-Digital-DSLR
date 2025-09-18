@@ -1,0 +1,7 @@
+{
+  "name": "AI Digital DSLR",
+  "description": "An application that allows users to create AI-generated photoshoots by combining their portrait with scene images, using Google's Gemini AI to generate realistic images of the user placed in various scenes with different outfit styles.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
