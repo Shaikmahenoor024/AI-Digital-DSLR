@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { OutfitStyle } from '../types';
+import { OutfitStyle, GenerationModel } from '../types';
 import ImageUploader from './ImageUploader';
 
 interface ChooseOutfitStyleProps {
-  onGenerate: (style: OutfitStyle, compareMode: boolean, customOutfitImage?: string | null) => void;
+  onGenerate: (style: OutfitStyle, compareMode: boolean, model: GenerationModel, customOutfitImage?: string | null) => void;
   scenePreview: string;
   onBack: () => void;
 }
@@ -19,10 +19,11 @@ const ChooseOutfitStyle: React.FC<ChooseOutfitStyleProps> = ({ onGenerate, scene
   const [selectedStyle, setSelectedStyle] = useState<OutfitStyle | null>(null);
   const [compareMode, setCompareMode] = useState(false);
   const [customOutfitImage, setCustomOutfitImage] = useState<string | null>(null);
+  const [generationModel, setGenerationModel] = useState<GenerationModel>(GenerationModel.GEMINI);
 
   const handleGenerate = () => {
     if (selectedStyle || compareMode) {
-      onGenerate(selectedStyle!, compareMode, customOutfitImage);
+      onGenerate(selectedStyle!, compareMode, generationModel, customOutfitImage);
     }
   };
   
@@ -98,6 +99,18 @@ const ChooseOutfitStyle: React.FC<ChooseOutfitStyleProps> = ({ onGenerate, scene
                     </div>
                     <div className="ml-3 text-white font-medium">Compare All Styles</div>
                 </label>
+            </div>
+            
+            <div className="w-full mb-6 text-left">
+                <p className="font-semibold text-center mb-2">AI Engine</p>
+                <div className="flex w-full rounded-lg bg-gray-700 p-1">
+                    <button onClick={() => setGenerationModel(GenerationModel.GEMINI)} className={`flex-1 p-2 rounded-md text-sm font-semibold transition-colors ${generationModel === GenerationModel.GEMINI ? 'bg-pink-600 text-white' : 'text-gray-300'}`}>
+                        Gemini (Photoreal)
+                    </button>
+                    <button onClick={() => setGenerationModel(GenerationModel.SEEDREAM)} className={`flex-1 p-2 rounded-md text-sm font-semibold transition-colors ${generationModel === GenerationModel.SEEDREAM ? 'bg-purple-600 text-white' : 'text-gray-300'}`}>
+                        Seedream (Artistic)
+                    </button>
+                </div>
             </div>
 
             <button

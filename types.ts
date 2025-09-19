@@ -16,6 +16,11 @@ export enum OutfitStyle {
   CUSTOM = 'Custom',
 }
 
+export enum GenerationModel {
+  GEMINI = 'Gemini',
+  SEEDREAM = 'Seedream',
+}
+
 export const SHOT_TYPES = ['Closeup Shot', 'Medium Close-up Shot', 'Knees-Up Medium Wide Shot'] as const;
 export type ShotType = typeof SHOT_TYPES[number];
 

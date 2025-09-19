@@ -1,13 +1,31 @@
 import { GoogleGenAI, Modality } from "@google/genai";
-import { OutfitStyle, ShotType } from '../types';
+import { OutfitStyle, ShotType, GenerationModel } from '../types';
 
-const API_KEY = process.env.API_KEY;
+const GEMINI_API_KEY = process.env.API_KEY;
+const SEEDREAM_API_KEY = process.env.SEEDREAM_API_KEY;
 
-if (!API_KEY) {
-  throw new Error("Missing Google Gemini API key");
-}
+let geminiAi: GoogleGenAI | null = null;
+let seedreamAi: GoogleGenAI | null = null;
 
-const ai = new GoogleGenAI({ apiKey: API_KEY });
+const getAiClient = (model: GenerationModel): GoogleGenAI => {
+    if (model === GenerationModel.GEMINI) {
+        if (!GEMINI_API_KEY) {
+            throw new Error("Missing Google Gemini API key. Please set the API_KEY environment variable.");
+        }
+        if (!geminiAi) {
+            geminiAi = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+        }
+        return geminiAi;
+    } else { // SEEDREAM
+        if (!SEEDREAM_API_KEY) {
+            throw new Error("Missing Seedream API key. Please set the SEEDREAM_API_KEY environment variable.");
+        }
+        if (!seedreamAi) {
+            seedreamAi = new GoogleGenAI({ apiKey: SEEDREAM_API_KEY });
+        }
+        return seedreamAi;
+    }
+};
 
 const base64ToPart = (base64Data: string, mimeType: string) => {
   return {
@@ -31,7 +49,7 @@ const shotTypeDetails: Record<ShotType, string> = {
   `,
   'Knees-Up Medium Wide Shot': `
     - Framing: An "American Shot," framed from mid-thigh up. This shot should capture most of the person's body and their immediate surroundings to give a strong sense of place and context.
-    - Camera & Lens: Emulate a 50mm lens at f/2.8. This will provide a natural field of view, capturing the subject within the scene without distortion and with a less wide, more focused perspective.
+    - Camera & Lens: Emulate a 85mm lens at f/2.4. This will provide a natural field of view, capturing the subject within the scene without distortion and with a less wide, more focused perspective.
     - Pose & Expression: A confident, full-body pose that fits the environment. The person should appear naturally placed and central to the composition.
   `
 };
@@ -55,6 +73,7 @@ export const generatePhotoshootImage = async (
   sceneImage: string, // base64 string
   outfitStyle: OutfitStyle,
   shotType: ShotType,
+  generationModel: GenerationModel,
   customOutfitImage?: string | null
 ): Promise<string> => {
   try {
@@ -64,13 +83,25 @@ export const generatePhotoshootImage = async (
     const shotDetails = shotTypeDetails[shotType];
     const isCustomOutfit = outfitStyle === OutfitStyle.CUSTOM && customOutfitImage;
 
+    const seedreamInstructions = `
+**AI Engine:** Seedream (Simulated)
+- **Aesthetic:** Emphasize a more dream-like, slightly stylized and artistic quality. Enhance colors and add a subtle, ethereal glow. Focus on creating a visually striking and imaginative composition rather than strict photorealism.
+`;
+
+    const geminiInstructions = `
+**AI Engine:** Gemini
+- **Hyper-Photorealism:** The final output must be indistinguishable from a high-resolution photograph taken with a professional DSLR/mirrorless camera and prime lens. Avoid any hint of being AI-generated.
+`;
+
     const prompt = `
-**Primary Goal:** Create a single, professional, photorealistic photograph by seamlessly compositing a person into a background scene with a new outfit.
+**Primary Goal:** Create a single, professional photograph by seamlessly compositing a person into a background scene with a new outfit, following the specified AI engine aesthetic.
 
 **Input Image Confirmation:**
 - Image 1 (First): The background SCENE.
 - Image 2 (Second): The reference PERSON whose likeness must be preserved.
 ${isCustomOutfit ? '- Image 3 (Third): The reference OUTFIT to be applied to the person.' : ''}
+
+${generationModel === GenerationModel.SEEDREAM ? seedreamInstructions : geminiInstructions}
 
 **CRITICAL MANDATES - These rules are absolute and must not be violated under any circumstances:**
 
@@ -100,11 +131,11 @@ ${isCustomOutfit ? '- Image 3 (Third): The reference OUTFIT to be applied to the
     }
     - **Reconfirm HIGHEST PRIORITY:** The person's identity must be perfectly preserved as mandated above. The generated face must be an exact replica. There is zero tolerance for deviation.
 
-3.  **Apply Photographic Properties:**
+3.  **Apply Photographic Properties & Fine Details:**
     - The final image must match the specific shot type instructions provided below.
-    - Re-light the person to match the scene's lighting conditions flawlessly. 
-    - Create accurate, soft shadows that ground the person in the environment. The person must not appear to be floating. Their feet (if visible) must be firmly on the ground with realistic contact shadows.
-    - Apply color grading to the entire image to ensure a cohesive, professional look. The person's skin tones must remain natural and accurate.
+    - **Masterful Re-lighting:** Re-light the person to match the scene's lighting conditions flawlessly. This includes replicating the direction, color temperature, and quality (hard vs. soft) of the primary light source, as well as accounting for bounced light and ambient occlusion. Create realistic specular highlights on skin and reflective surfaces.
+    - **Accurate Shadows:** Create accurate, soft shadows that ground the person in the environment. The person must not appear to be floating. Their feet (if visible) must be firmly on the ground with realistic contact shadows and core shadows on the body.
+    - **Cohesive Color Grading:** Apply professional color grading to the entire image for a unified, cinematic look. The person's skin tones must remain natural, accurate, and vibrant.
     
 **Shot Type Specifications: ${shotType}**
 ${shotDetails}
@@ -116,11 +147,11 @@ ${
 }
 
 **Universal Quality Requirements - These are mandatory:**
-- **Photorealism:** The final output must be indistinguishable from a real, high-end photograph. Avoid any hint of being AI-generated.
-- **Seamless Compositing:** No visible edges, halos, or artifacts. The blend between the person and the scene must be perfect.
-- **Lighting & Shadow Accuracy:** Lighting on the person must match the scene's source direction, color, and hardness. Shadows must be correctly cast, soft, and realistic, firmly grounding the subject.
-- **Cohesive Color Grading:** The entire image should have a unified, professional color palette.
-- **Professional Quality:** The image must look like it was taken by a professional photographer with high-quality camera gear.
+- **Extreme Detail & Texture:** Generate extremely fine details. For the person, this includes realistic skin texture (pores, subtle lines, realistic sheen), individual hair strands with realistic flyaways, and crisp catchlights in the eyes. For clothing, render the precise texture of the fabric (e.g., the weave of denim, the sheen of silk, the knit of wool).
+- **Impeccable Clarity & Sharpness:** The image must be tack sharp, especially on the subject's eyes. Avoid any digital softness, blurriness, or "painterly" effects. The focus falloff should be natural and consistent with the specified lens aperture.
+- **Seamless Compositing:** No visible edges, halos, or color fringing. The blend between the person and the scene must be absolutely perfect and physically plausible.
+- **Lighting & Shadow Perfection:** Lighting on the person must perfectly match the scene's source direction, color, and hardness. Shadows must be correctly cast, with soft penumbras and accurate contact shadows, firmly grounding the subject.
+- **No Digital Artifacts:** The final image must be clean and pristine, with no compression artifacts, strange patterns, misplaced textures, or other tell-tale signs of AI generation.
 `;
     
     const imageParts = [
@@ -134,6 +165,8 @@ ${
     }
     
     const parts = [...imageParts, { text: prompt }];
+
+    const ai = getAiClient(generationModel);
 
     const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash-image-preview',
@@ -158,7 +191,7 @@ ${
     }
   } catch (error) {
     console.error("Error generating photoshoot image:", error);
-    if (error instanceof Error && error.message.includes("No image was generated")) {
+    if (error instanceof Error && (error.message.includes("No image was generated") || error.message.includes("API key"))) {
         throw error;
     }
     throw new Error("Failed to generate image. An unexpected error occurred. Please check the console for details.");

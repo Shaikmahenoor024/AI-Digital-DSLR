@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { AppStep, OutfitStyle, ShotType, GeneratedShot, SHOT_TYPES } from './types';
+import { AppStep, OutfitStyle, ShotType, GeneratedShot, SHOT_TYPES, GenerationModel } from './types';
 import { generatePhotoshootImage } from './services/geminiService';
 
 import Header from './components/Header';
@@ -79,7 +79,7 @@ const App: React.FC = () => {
     setStep(AppStep.CHOOSE_OUTFIT);
   };
 
-  const handleGenerate = useCallback(async (style: OutfitStyle, compareMode: boolean, customOutfitImage?: string | null) => {
+  const handleGenerate = useCallback(async (style: OutfitStyle, compareMode: boolean, generationModel: GenerationModel, customOutfitImage?: string | null) => {
     if (!portraitImage || !sceneImage) {
       setError("Portrait and scene images are required.");
       return;
@@ -95,7 +95,7 @@ const App: React.FC = () => {
       for (const currentStyle of stylesToGenerate) {
         for (const shotType of SHOT_TYPES) {
           const prompt = `Portrait in a ${sceneImage ? 'custom' : 'generic'} scene, ${currentStyle} style, ${shotType}.`;
-          const resultUrl = await generatePhotoshootImage(portraitImage, sceneImage, currentStyle, shotType, customOutfitImage);
+          const resultUrl = await generatePhotoshootImage(portraitImage, sceneImage, currentStyle, shotType, generationModel, customOutfitImage);
           allShots.push({
             id: `${Date.now()}-${currentStyle}-${shotType}`,
             url: resultUrl,
